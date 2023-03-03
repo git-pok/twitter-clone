@@ -1,0 +1,82 @@
+{% extends 'base.html' %}
+{% block content %}
+  <div class="row">
+
+    <aside class="col-md-4 col-lg-3 col-sm-12" id="home-aside">
+      <div class="card user-card">
+        <div>
+          <div class="image-wrapper">
+            <!-- Added lines 15-21 -->
+            <!-- if user.header_image_url, doesn't work with the logic in line 19-25.
+              This db has a lot of header images that render as xml, and
+              python and jinja can't render them; even when we access the jpg
+              url for the image.
+            -->
+            {% if status_code == 403|int() %}
+              <img src="/static/images/warbler-hero.jpg" alt="Image for {{ g.user.username }}" class="card-hero">
+            {% elif status_code != 403|int() %}
+              <img src="{{ g.user.header_image_url }}" alt="Image for {{ g.user.username }}" class="card-hero">
+            {% else %}
+              <img src="/static/images/warbler-hero.jpg" alt="Image for {{ g.user.username }}" class="card-hero">
+            {% endif %}
+            <!-- replaced with 15-21: <img src="{{ g.user.header_image_url }}" alt="" class="card-hero"> -->
+          </div>
+          <a href="/users/{{ g.user.id }}" class="card-link">
+            <img src="{{ g.user.image_url }}"
+                 alt="Image for {{ g.user.username }}"
+                 class="card-image">
+            <p>@{{ g.user.username }}</p>
+          </a>
+          <ul class="user-stats nav nav-pills">
+            <li class="stat">
+              <p class="small">Messages</p>
+              <h4>
+                <a href="/users/{{ g.user.id }}">{{ g.user.messages | length }}</a>
+              </h4>
+            </li>
+            <li class="stat">
+              <p class="small">Following</p>
+              <h4>
+                <a href="/users/{{ g.user.id }}/following">{{ g.user.following | length }}</a>
+              </h4>
+            </li>
+            <li class="stat">
+              <p class="small">Followers</p>
+              <h4>
+                <a href="/users/{{ g.user.id }}/followers">{{ g.user.followers | length }}</a>
+              </h4>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </aside>
+
+    <div class="col-lg-6 col-md-8 col-sm-12">
+      <ul class="list-group" id="messages">
+        <!-- Added the if conditional in line 58; not the code from line 59 and on. -->
+        {% for msg in messages %}
+        {% if g.user.is_following(msg.user) or msg.user_id == g.user.id %}
+          <li class="list-group-item">
+            <a href="/messages/{{ msg.id  }}" class="message-link"/>
+            <a href="/users/{{ msg.user.id }}">
+              <img src="{{ msg.user.image_url }}" alt="" class="timeline-image">
+            </a>
+            <div class="message-area">
+              <a href="/users/{{ msg.user.id }}">@{{ msg.user.username }}</a>
+              <span class="text-muted">{{ msg.timestamp.strftime('%d %B %Y') }}</span>
+              <p>{{ msg.text }}</p>
+            </div>
+            <form method="POST" action="/users/add_like/{{ msg.id }}" id="messages-form">
+              <!-- Added line 58-60 -->
+              <button class="btn btn-sm {{ 'btn-primary' if msg.like[0]|string() == msg.id|string() else 'btn-secondary' }}">
+                <i class="fa fa-thumbs-up"></i> 
+              </button>
+            </form>
+          </li>
+          {% endif %}
+        {% endfor %}
+      </ul>
+    </div>
+
+  </div>
+{% endblock %}

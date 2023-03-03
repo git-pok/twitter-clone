@@ -1,4 +1,4 @@
-# Unit30 Twitter Clone Collaborative Project
+# Twitter Clone Collaborative Project
 This was a collaborative project. Please read each file to see what logics and files I created. Read "My Project Tasks" to see what I had to solve for.
 
 # My Project Tasks

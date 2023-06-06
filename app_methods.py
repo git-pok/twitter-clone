@@ -5,60 +5,33 @@ import requests
 from forms import UserAddForm, LoginForm, MessageForm, UserEditForm
 from models import db, connect_db, User, Message, Follows, Likes
 
-def update_user(userf, emailf, usernamef, image_urlf, header_image_urlf):
+def update_user(form_data, userf):
     """updates User instance and updates database"""
-    if image_urlf and header_image_urlf: 
-        userf.email = emailf
-        userf.username = usernamef 
-        userf.image_url = image_urlf 
-        userf.header_image_url = header_image_urlf 
- 
-        db.session.add(userf)
-        db.session.commit()
-    if image_urlf and not header_image_urlf:
-        userf.email = emailf
-        userf.username = usernamef 
-        userf.image_url = image_urlf 
-        userf.header_image_url = userf.header_image_url 
- 
-        db.session.add(userf)
-        db.session.commit()
-    elif not image_urlf and header_image_urlf:
-        userf.email = emailf
-        userf.username = usernamef 
-        userf.image_url = userf.image_url 
-        userf.header_image_url = header_image_urlf 
- 
-        db.session.add(userf)
-        db.session.commit()
-    else:
-        userf.email = emailf
-        userf.username = usernamef 
-        userf.image_url = userf.image_url 
-        userf.header_image_url = userf.header_image_url 
- 
-        db.session.add(userf)
-        db.session.commit()
+    userf.email = form_data.get("email") if form_data.get("email") != "" else userf.email
+    userf.username = form_data.get("username") if form_data.get("username") != "" else userf.username
+    userf.image_url = form_data.get("image_url") if form_data.get("image_url") != "" else userf.image_url 
+    userf.header_image_url = form_data.get("header_image_url") if form_data.get("header_image_url") != "" else userf.header_image_url
+    db.session.add(userf)
+    db.session.commit()
 
 
 def delete_like(message):
     """
     deletes row from Like model and table
     """
-    print('delete_like**************', message)
     Likes.query.filter_by(message_id=message).delete()
     db.session.commit()
 
 
-def add_to_like(user_idf, message_idf, like_id, message_user_id):
-    if user_idf == message_user_id:
+def add_to_like(curr_user_id, liked_message_id, like_exists, message_user_id):
+    if curr_user_id == message_user_id:
         flash("Current user cant like own messages.", "danger")
-    elif like_id:
-        delete_like(message_idf)
+    elif like_exists:
+        delete_like(liked_message_id)
         db.session.rollback()
         flash(f"Successfully unliked message!", "success")
     else:
-        like = Likes(user_id=user_idf, message_id=message_idf)
+        like = Likes(user_id=curr_user_id, message_id=liked_message_id)
         db.session.add(like)
         db.session.commit()
         db.session.rollback()

@@ -145,7 +145,7 @@ def list_users():
             if not search:
                 users = User.query.all()
             else:
-                users = User.query.filter(User.username.like(f"%{search}%")).all()
+                users = User.query.filter(User.username.ilike(f"%{search}%")).all()
 
             return render_template('users/index.html', users=users)
     except AttributeError:
@@ -281,17 +281,15 @@ def profile():
                 return redirect(f"/users/{user.id}")
 
             if form.validate_on_submit():
-                edit_form_auth = User.authenticate(form.username.data,
+                edit_form_auth = User.authenticate(g.user.username,
                 form.password.data
                 )
 
                 if edit_form_auth:
-                    emailf = form.data.get("email")
-                    usernamef = form.data.get("username")
-                    image_urlf = form.data.get("image_url")
-                    header_image_urlf = form.data.get("header_image_url")
-  
-                    update_user(user, emailf, usernamef, image_urlf, header_image_urlf)
+                    form_data = form.data
+                    form_data.pop("password")
+                    form_data.pop("csrf_token")
+                    update_user(form_data, user)
                     flash(f"Successfully edited user!", "success")
                     return redirect(f"/users/{user.id}")
                 else:
@@ -396,32 +394,26 @@ def messages_destroy(message_id):
 def add_like(message_id):
     """Add a like for a message."""
     # Created all logic.
-    try:
-        if session.get(CURR_USER_KEY) == g.user.id:
-            message = Message.query.get_or_404(message_id)
-            message_user_id = message.user_id
-            curr_user_id = session['curr_user']
+    # try:
+    if session.get(CURR_USER_KEY) == g.user.id:
+        if not g.user:
+            flash("Access unauthorized.", "danger")
+            return redirect("/")
 
-            like = Likes.query.filter(
-            Likes.user_id == curr_user_id, Likes.message_id == message_id
-            ).first()
+        liked_message = Message.query.get_or_404(message_id)
+        message_user_id = liked_message.user_id
+        curr_user_id = session['curr_user']
 
-            try:
-                like_id = like.id
-            except:
-                like_id = []
-     
-            if not g.user:
-                flash("Access unauthorized.", "danger")
-                return redirect("/")
-            else:
-                user_idf = g.user.id
-                add_to_like(user_idf, message_id, like_id, message_user_id)
-        
-                return redirect(f"/users/{message_user_id}")
-    except AttributeError:
-        flash("Access unauthorized.", "danger")
-        return redirect('/')
+        like = Likes.query.filter(
+        Likes.user_id == curr_user_id, Likes.message_id == message_id
+        ).first()
+
+        like_exists = True if like else False
+        add_to_like(curr_user_id, message_id, like_exists, message_user_id)
+        return redirect(f"/users/{message_user_id}")
+    # except AttributeError:
+    #     flash("Access unauthorized.", "danger")
+    #     return redirect('/')
 
 
 @app.route('/users/<int:user_id>/likes', methods=['GET'])
